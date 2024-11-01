@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import logo from '@assets/img/logo.svg';
 import '@pages/newtab/Newtab.css';
 import { DataTable } from '@src/components/data-table';
 import { columns } from '@src/components/columns';
 import { Wine } from '@src/components/columns';
 
-export default function Newtab(): JSX.Element {
+export default function WineList(): JSX.Element {
   const [data, setData] = useState<Wine[]>([]);
 
   useEffect(() => {

@@ -63,6 +63,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@src': root,
+      '@': root,
       '@assets': assetsDir,
       '@pages': pagesDir,
     },
