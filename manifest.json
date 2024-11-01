@@ -42,7 +42,9 @@
       "resources": [
         "contentStyle.css",
         "icon-128.png",
-        "icon-32.png"
+        "icon-32.png",
+        "src/pages/newtab/index.html",
+        "src/pages/newtab/index.tsx"
       ],
       "matches": []
     }

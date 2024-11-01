@@ -13,8 +13,9 @@ interface WineResponse {
 
 interface FilteredData {
   id: string | null;
-  alkoId: string | null;
   name: string | null;
+  alkoId: string | null;
+  alkoName: string | null;
   alcohol: number | null;
   image: string | null;
   region: {
@@ -71,8 +72,9 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
         if (data.hits && data.hits.length > 0) {
           const filteredData: FilteredData = {
             id: data.hits[0].vintages[0].id || null,
-            alkoId: alkoId || null,
             name: data.hits[0].name || null,
+            alkoId: alkoId || null,
+            alkoName: wineName,
             alcohol: data.hits[0].alcohol || null,
             image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
             region: {

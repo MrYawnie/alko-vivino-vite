@@ -12,7 +12,7 @@ export default function Popup(): JSX.Element {
   }, []);
 
   const openWinesPage = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('wines.html') });
+    chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/newtab/index.html') });
   };
 
   return (
