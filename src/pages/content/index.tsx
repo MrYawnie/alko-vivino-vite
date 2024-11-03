@@ -1,3 +1,5 @@
+import { parse } from "path";
+
 const productContainers: NodeListOf<Element> = document.querySelectorAll('.product-data-container');
 const wineNameContainer: HTMLElement | null = document.querySelector('h1[itemprop="name"]');
 const expirationTime: number = 30 * 24 * 60 * 60 * 1000;
@@ -25,6 +27,7 @@ interface ProductData {
   id: string;
   name: string;
   size: string;
+  price: string;
   selection: string;
   category: string;
   origin: string;
@@ -35,6 +38,36 @@ interface ProductData {
   greenChoice: string;
   ethical: string;
   vintage?: string | null;
+}
+
+interface VivinoData {
+  id: string | null;
+  name: string | null;
+  alkoId: string | null;
+  alkoName: string | null;
+  category: string | null;
+  alcohol: number | null;
+  price: string | null;
+  image: string | null;
+  region: {
+    country: string | null;
+    countryCode: string | null;
+    name: string | null;
+    region: string | null;
+  };
+  statistics: {
+    all: {
+      ratings_average: number | null;
+      ratings_count: number | null;
+    };
+    [key: string]: {
+      id?: string | null;
+      alkoId?: string | null;
+      ratings_average: number | null;
+      ratings_count: number | null;
+    };
+  };
+  timestamp?: number;
 }
 
 if (wineNameContainer) {
@@ -59,16 +92,26 @@ if (wineNameContainer) {
         }
       } else {
         console.log('Fetching new data for:', wineName);
-        fetchWineDetails(wineName, null, null, vintage);
+        fetchWineDetails(wineName, null, null);
       }
     } else {
       console.log('No saved wine details found in local storage. Fetching details from API for wine:', wineName);
-      fetchWineDetails(wineName, null, null, vintage);
+      fetchWineDetails(wineName, null, null);
     }
   }); */
 
 } else if (productContainers.length > 0) {
   productContainers.forEach((container: Element) => {
+    let price: string = '';
+    const priceSpan: HTMLSpanElement | null = container.querySelector('span[itemprop="price"]');
+    if (priceSpan) {
+      price = priceSpan.getAttribute('content') || '';
+      console.log('Price:', price);
+    } else {
+      console.log('Price span not found in this container.');
+    }
+    console.log(price)
+
     console.log('Product Data Container:', container);
     const productData: string | null = container.getAttribute('data-product-data');
     if (productData) {
@@ -81,17 +124,10 @@ if (wineNameContainer) {
       const wineName: string = hasYear ? wineNameVintage.replace(lastWord, '').trim() : wineNameVintage;
       const vintage: string | null = hasYear ? lastWord : null;
       const alkoId: number = parseInt(parsedData.id, 10);
+      parsedData.vintage = vintage;
+      parsedData.name = wineName;
+      parsedData.price = price;
 
-      const wineData: WineData = {
-        id: parsedData.id,
-        name: wineName,
-        size: parsedData.size,
-        category: parsedData.category,
-        origin: parsedData.origin,
-        producer: parsedData.producer,
-        alcohol: parsedData.alcohol,
-        vintage: vintage,
-      };
       console.log('Wine Name:', wineName);
 
       chrome.storage.local.get(wineName, (data: { [key: string]: any }) => {
@@ -105,11 +141,11 @@ if (wineNameContainer) {
             displayWineDetails(storedData, container as HTMLElement, vintage);
           } else {
             console.log('Fetching new data for:', wineName);
-            fetchWineDetails(parsedData, container as HTMLElement, vintage );
+            fetchWineDetails(parsedData, container as HTMLElement );
           }
         } else {
           console.log('No saved wine details found in local storage. Fetching details from API for wine:', wineName);
-          fetchWineDetails(parsedData, container as HTMLElement, vintage );
+          fetchWineDetails(parsedData, container as HTMLElement );
         }
       });
     }
@@ -118,18 +154,19 @@ if (wineNameContainer) {
   console.error('Failed to find wine name on the page');
 }
 
-function fetchWineDetails(parsedData: { name: string; id: string, origin: string, category: string }, container: HTMLElement | null, vintage: string | null ): void {
+function fetchWineDetails(parsedData: ProductData, container: HTMLElement | null ): void {
   const wineName = parsedData.name;
   console.log('Fetching wine details for:', wineName);
-  chrome.runtime.sendMessage({ action: "fetch_rating", parsedData }, (response: { success: boolean; data: any; error?: string }) => {
+  chrome.runtime.sendMessage({ action: "fetch_rating", parsedData }, (response: { success: boolean; data: VivinoData; error?: string }) => {
     console.log('Message sent for:', wineName, 'Response:', response);
     if (response.success) {
-      const wineDetails: any = response.data;
+      const wineDetails: VivinoData = response.data;
       wineDetails.timestamp = new Date().getTime();
 
-      chrome.storage.local.get(wineName, (result: { [key: string]: any }) => {
+      chrome.storage.local.get(wineName, (result: { [key: string]: VivinoData }) => {
         if (result[wineName]) {
-          const existingWineDetails: any = result[wineName];
+          const existingWineDetails: VivinoData = result[wineName];
+          const vintage: string = parsedData.vintage || 'all';
           if (vintage && wineDetails.statistics[vintage] && !existingWineDetails.statistics[vintage]) {
             existingWineDetails.statistics[vintage] = wineDetails.statistics[vintage];
           }
@@ -139,6 +176,7 @@ function fetchWineDetails(parsedData: { name: string; id: string, origin: string
           });
         } else {
           chrome.storage.local.set({ [wineName]: wineDetails }, () => {
+            const vintage: string = parsedData.vintage || 'all';
             displayWineDetails(wineDetails, container, vintage);
           });
         }

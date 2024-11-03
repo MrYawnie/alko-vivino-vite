@@ -1,8 +1,23 @@
 interface WineRequest {
   action: string;
-  wineName: string;
-  alkoId: string | null;
-  vintage: string;
+  parsedData: AlkoData;
+}
+
+interface AlkoData {
+  id: string;
+  name: string;
+  size: string;
+  price: string;
+  selection: string;
+  category: string;
+  origin: string;
+  supplier: string;
+  producer: string;
+  alcohol: string;
+  packaging: string;
+  greenChoice: string;
+  ethical: string;
+  vintage?: string | null;
 }
 
 interface WineResponse {
@@ -16,10 +31,13 @@ interface FilteredData {
   name: string | null;
   alkoId: string | null;
   alkoName: string | null;
+  category: string | null;
   alcohol: number | null;
+  price: string | null;
   image: string | null;
   region: {
     country: string | null;
+    countryCode: string | null;
     name: string | null;
     region: string | null;
   };
@@ -30,6 +48,7 @@ interface FilteredData {
     };
     [key: string]: {
       id?: string | null;
+      alkoId?: string | null;
       ratings_average: number | null;
       ratings_count: number | null;
     };
@@ -39,10 +58,14 @@ interface FilteredData {
 console.log('Background script running...');
 
 chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runtime.MessageSender, sendResponse: (response: WineResponse) => void) => {
+  console.log('request:', request);
   if (request.action === "fetch_rating") {
-    const wineName: string = request.wineName;
-    const alkoId: string | null = request.alkoId;
-    const vintage: string = request.vintage;
+    const wineName: string = request.parsedData.name;
+    const alkoId: string | null = request.parsedData.id;
+    const vintage: string = request.parsedData.vintage ?? '';
+    const origin: string = request.parsedData.origin;
+    const category: string = request.parsedData.category;
+    const price: string = request.parsedData.price;
 
     console.log('wineName:', wineName);
 
@@ -75,10 +98,13 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
             name: data.hits[0].name || null,
             alkoId: alkoId || null,
             alkoName: wineName,
+            category: category || null,
             alcohol: data.hits[0].alcohol || null,
+            price: price || null,
             image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
             region: {
-              country: data.hits[0].region?.country || data.hits[0].winery?.region.country || null,
+              country: origin || null,
+              countryCode: data.hits[0].region?.country || data.hits[0].winery?.region.country || null,
               name: data.hits[0].region?.name || data.hits[0].winery?.region.name || null,
               region: data.hits[0].winery?.region.name || null,
             },
@@ -89,6 +115,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
               },
               [vintage]: {
                 id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
+                alkoId: alkoId || null,
                 ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
                 ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
               },
