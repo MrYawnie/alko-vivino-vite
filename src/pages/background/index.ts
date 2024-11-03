@@ -1,58 +1,14 @@
+import { AlkoData, FilteredData } from '@src/lib/types';
+
 interface WineRequest {
   action: string;
   parsedData: AlkoData;
-}
-
-interface AlkoData {
-  id: string;
-  name: string;
-  size: string;
-  price: string;
-  selection: string;
-  category: string;
-  origin: string;
-  supplier: string;
-  producer: string;
-  alcohol: string;
-  packaging: string;
-  greenChoice: string;
-  ethical: string;
-  vintage?: string | null;
 }
 
 interface WineResponse {
   success: boolean;
   data?: FilteredData;
   error?: string;
-}
-
-interface FilteredData {
-  id: string | null;
-  name: string | null;
-  alkoId: string | null;
-  alkoName: string | null;
-  category: string | null;
-  alcohol: number | null;
-  price: string | null;
-  image: string | null;
-  region: {
-    country: string | null;
-    countryCode: string | null;
-    name: string | null;
-    region: string | null;
-  };
-  statistics: {
-    all: {
-      ratings_average: number | null;
-      ratings_count: number | null;
-    };
-    [key: string]: {
-      id?: string | null;
-      alkoId?: string | null;
-      ratings_average: number | null;
-      ratings_count: number | null;
-    };
-  };
 }
 
 console.log('Background script running...');
@@ -93,6 +49,26 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
       .then((data: any) => {
         console.log('data:', data);
         if (data.hits && data.hits.length > 0) {
+
+          const statistics: any = {
+            all: {
+              alkoId: alkoId || null,
+              ratings_average: data.hits[0].statistics?.ratings_average || null,
+              ratings_count: data.hits[0].statistics?.ratings_count || null,
+              price: price,
+            },
+          };
+        
+          if (vintage) {
+            statistics[vintage] = {
+              id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
+              alkoId: alkoId || null,
+              ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
+              ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
+              price: price,
+            };
+          }
+
           const filteredData: FilteredData = {
             id: data.hits[0].vintages[0].id || null,
             name: data.hits[0].name || null,
@@ -108,18 +84,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
               name: data.hits[0].region?.name || data.hits[0].winery?.region.name || null,
               region: data.hits[0].winery?.region.name || null,
             },
-            statistics: {
-              all: {
-                ratings_average: data.hits[0].statistics?.ratings_average || null,
-                ratings_count: data.hits[0].statistics?.ratings_count || null,
-              },
-              [vintage]: {
-                id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
-                alkoId: alkoId || null,
-                ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
-                ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
-              },
-            }
+            statistics: statistics,
           };
 
           console.log('filteredData:', filteredData);

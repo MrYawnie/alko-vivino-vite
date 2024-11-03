@@ -1,4 +1,4 @@
-import { parse } from "path";
+import { AlkoData, FilteredData } from '@src/lib/types';
 
 const productContainers: NodeListOf<Element> = document.querySelectorAll('.product-data-container');
 const wineNameContainer: HTMLElement | null = document.querySelector('h1[itemprop="name"]');
@@ -10,64 +10,6 @@ try {
   console.log('Product Containers:', productContainers);
 } catch (e) {
   console.error(e);
-}
-
-export interface WineData {
-  id: string;
-  name: string;
-  size: string;
-  category: string;
-  origin: string;
-  producer: string;
-  alcohol: string;
-  vintage?: string;
-}
-
-interface ProductData {
-  id: string;
-  name: string;
-  size: string;
-  price: string;
-  selection: string;
-  category: string;
-  origin: string;
-  supplier: string;
-  producer: string;
-  alcohol: string;
-  packaging: string;
-  greenChoice: string;
-  ethical: string;
-  vintage?: string | null;
-}
-
-interface VivinoData {
-  id: string | null;
-  name: string | null;
-  alkoId: string | null;
-  alkoName: string | null;
-  category: string | null;
-  alcohol: number | null;
-  price: string | null;
-  image: string | null;
-  region: {
-    country: string | null;
-    countryCode: string | null;
-    name: string | null;
-    region: string | null;
-  };
-  statistics: {
-    all: {
-      ratings_average: number | null;
-      ratings_count: number | null;
-    };
-    [key: string]: {
-      id?: string | null;
-      alkoId?: string | null;
-      ratings_average: number | null;
-      ratings_count: number | null;
-    };
-  };
-  timestamp?: number;
 }
 
 if (wineNameContainer) {
@@ -116,7 +58,7 @@ if (wineNameContainer) {
     const productData: string | null = container.getAttribute('data-product-data');
     if (productData) {
       console.log('Product Data:', productData);
-      const parsedData: ProductData = JSON.parse(productData);
+      const parsedData: AlkoData = JSON.parse(productData);
       console.log('Parsed Data:', parsedData);
       const wineNameVintage: string = parsedData.name;
       const lastWord: string = wineNameVintage.split(' ').pop() || '';
@@ -154,18 +96,18 @@ if (wineNameContainer) {
   console.error('Failed to find wine name on the page');
 }
 
-function fetchWineDetails(parsedData: ProductData, container: HTMLElement | null ): void {
+function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null ): void {
   const wineName = parsedData.name;
   console.log('Fetching wine details for:', wineName);
-  chrome.runtime.sendMessage({ action: "fetch_rating", parsedData }, (response: { success: boolean; data: VivinoData; error?: string }) => {
+  chrome.runtime.sendMessage({ action: "fetch_rating", parsedData }, (response: { success: boolean; data: FilteredData; error?: string }) => {
     console.log('Message sent for:', wineName, 'Response:', response);
     if (response.success) {
-      const wineDetails: VivinoData = response.data;
+      const wineDetails: FilteredData = response.data;
       wineDetails.timestamp = new Date().getTime();
 
-      chrome.storage.local.get(wineName, (result: { [key: string]: VivinoData }) => {
+      chrome.storage.local.get(wineName, (result: { [key: string]: FilteredData }) => {
         if (result[wineName]) {
-          const existingWineDetails: VivinoData = result[wineName];
+          const existingWineDetails: FilteredData = result[wineName];
           const vintage: string = parsedData.vintage || 'all';
           if (vintage && wineDetails.statistics[vintage] && !existingWineDetails.statistics[vintage]) {
             existingWineDetails.statistics[vintage] = wineDetails.statistics[vintage];
@@ -187,7 +129,7 @@ function fetchWineDetails(parsedData: ProductData, container: HTMLElement | null
   });
 }
 
-function displayWineDetails(wineDetails: any, container: HTMLElement | null, vintage: string | null): void {
+function displayWineDetails(wineDetails: FilteredData, container: HTMLElement | null, vintage: string | null): void {
   const overallRatingElement: HTMLSpanElement = document.createElement('span');
   const vintageRatingElement: HTMLSpanElement = document.createElement('span');
   const vivinoLink: HTMLAnchorElement = document.createElement('a');

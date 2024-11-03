@@ -3,6 +3,8 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "./ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@radix-ui/react-tooltip";
+import { TooltipProvider } from "./ui/tooltip";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -26,6 +28,7 @@ export type Wine = {
       alkoId?: number;
       ratings_average: number | null;
       ratings_count: number;
+      price: number;
     };
   };
   timestamp: number;
@@ -129,23 +132,47 @@ export const columns: ColumnDef<Wine>[] = [
           Average Rating and Count
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      )
+      );
     },
     cell: ({ row }) => {
       const statistics = row.original.statistics;
       return (
-        <div>
-          {Object.keys(statistics).map((key) => {
-            const { ratings_average, ratings_count } = statistics[key];
-            const average = ratings_average ? ratings_average.toFixed(1) : "N/A";
-            const count = ratings_count.toLocaleString();
-            return (
-              <div key={key}>
-                {key}:   {average} ★ | {count} ratings
-              </div>
-            );
-          })}
-        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Vintage</th>
+              <th>Rating</th>
+              <th>Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.keys(statistics).map((key) => {
+              if (key === 'all') return null; // Skip 'all' key
+              const { ratings_average, ratings_count, price } = statistics[key];
+              const average = ratings_average ? ratings_average.toFixed(1) : "N/A";
+              const count = ratings_count || "N/A";
+              const priceValue = price || "N/A";
+              return (
+                <tr key={key}>
+                  <td>{key}</td>
+                  <td>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <span>{average} ★</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <span>{count} ratings</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </td>
+                  <td>{priceValue}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       );
     },
   },
