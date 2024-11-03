@@ -10,8 +10,35 @@ try {
   console.error(e);
 }
 
+export interface WineData {
+  id: string;
+  name: string;
+  size: string;
+  category: string;
+  origin: string;
+  producer: string;
+  alcohol: string;
+  vintage?: string;
+}
+
+interface ProductData {
+  id: string;
+  name: string;
+  size: string;
+  selection: string;
+  category: string;
+  origin: string;
+  supplier: string;
+  producer: string;
+  alcohol: string;
+  packaging: string;
+  greenChoice: string;
+  ethical: string;
+  vintage?: string | null;
+}
+
 if (wineNameContainer) {
-  const wineNameVintage: string = wineNameContainer.textContent || '';
+  /* const wineNameVintage: string = wineNameContainer.textContent || '';
   const lastWord: string = wineNameVintage.split(' ').pop() || '';
   const hasYear: RegExpMatchArray | null = lastWord.match(/(20\d{2}|19\d{2})/);
   const wineName: string = hasYear ? wineNameVintage.replace(lastWord, '').trim() : wineNameVintage;
@@ -38,7 +65,7 @@ if (wineNameContainer) {
       console.log('No saved wine details found in local storage. Fetching details from API for wine:', wineName);
       fetchWineDetails(wineName, null, null, vintage);
     }
-  });
+  }); */
 
 } else if (productContainers.length > 0) {
   productContainers.forEach((container: Element) => {
@@ -46,13 +73,25 @@ if (wineNameContainer) {
     const productData: string | null = container.getAttribute('data-product-data');
     if (productData) {
       console.log('Product Data:', productData);
-      const parsedData: { name: string; id: string } = JSON.parse(productData);
+      const parsedData: ProductData = JSON.parse(productData);
+      console.log('Parsed Data:', parsedData);
       const wineNameVintage: string = parsedData.name;
       const lastWord: string = wineNameVintage.split(' ').pop() || '';
       const hasYear: RegExpMatchArray | null = lastWord.match(/(20\d{2}|19\d{2})/);
       const wineName: string = hasYear ? wineNameVintage.replace(lastWord, '').trim() : wineNameVintage;
       const vintage: string | null = hasYear ? lastWord : null;
       const alkoId: number = parseInt(parsedData.id, 10);
+
+      const wineData: WineData = {
+        id: parsedData.id,
+        name: wineName,
+        size: parsedData.size,
+        category: parsedData.category,
+        origin: parsedData.origin,
+        producer: parsedData.producer,
+        alcohol: parsedData.alcohol,
+        vintage: vintage,
+      };
       console.log('Wine Name:', wineName);
 
       chrome.storage.local.get(wineName, (data: { [key: string]: any }) => {
@@ -66,11 +105,11 @@ if (wineNameContainer) {
             displayWineDetails(storedData, container as HTMLElement, vintage);
           } else {
             console.log('Fetching new data for:', wineName);
-            fetchWineDetails(wineName, alkoId, container as HTMLElement, vintage);
+            fetchWineDetails(parsedData, container as HTMLElement, vintage );
           }
         } else {
           console.log('No saved wine details found in local storage. Fetching details from API for wine:', wineName);
-          fetchWineDetails(wineName, alkoId, container as HTMLElement, vintage);
+          fetchWineDetails(parsedData, container as HTMLElement, vintage );
         }
       });
     }
@@ -79,9 +118,10 @@ if (wineNameContainer) {
   console.error('Failed to find wine name on the page');
 }
 
-function fetchWineDetails(wineName: string, alkoId: number | null, container: HTMLElement | null, vintage: string | null): void {
+function fetchWineDetails(parsedData: { name: string; id: string, origin: string, category: string }, container: HTMLElement | null, vintage: string | null ): void {
+  const wineName = parsedData.name;
   console.log('Fetching wine details for:', wineName);
-  chrome.runtime.sendMessage({ action: "fetch_rating", wineName, alkoId, vintage }, (response: { success: boolean; data: any; error?: string }) => {
+  chrome.runtime.sendMessage({ action: "fetch_rating", parsedData }, (response: { success: boolean; data: any; error?: string }) => {
     console.log('Message sent for:', wineName, 'Response:', response);
     if (response.success) {
       const wineDetails: any = response.data;
