@@ -17,11 +17,12 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
   console.log('request:', request);
   if (request.action === "fetch_rating") {
     const wineName: string = request.parsedData.name;
-    const alkoId: string | null = request.parsedData.id;
+    const alkoId: number | null = request.parsedData.id;
+    const alcohol: number = request.parsedData.alcohol;
     const vintage: string = request.parsedData.vintage ?? '';
     const origin: string = request.parsedData.origin;
     const category: string = request.parsedData.category;
-    const price: string = request.parsedData.price;
+    const price: number = request.parsedData.price;
 
     console.log('wineName:', wineName);
 
@@ -75,7 +76,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
             alkoId: alkoId || null,
             alkoName: wineName,
             category: category || null,
-            alcohol: data.hits[0].alcohol || null,
+            alcohol: alcohol || null,
             price: price || null,
             image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
             region: {

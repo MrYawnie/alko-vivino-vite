@@ -1,14 +1,14 @@
 export interface AlkoData {
-    id: string;
+    id: number;
     name: string;
-    size: string;
-    price: string;
+    size: number;
+    price: number;
     selection: string;
     category: string;
     origin: string;
     supplier: string;
     producer: string;
-    alcohol: string;
+    alcohol: number;
     packaging: string;
     greenChoice: string;
     ethical: string;
@@ -16,13 +16,13 @@ export interface AlkoData {
   }
 
   export interface FilteredData {
-    id: string | null;
+    id: number | null;
     name: string | null;
-    alkoId: string | null;
+    alkoId: number | null;
     alkoName: string | null;
     category: string | null;
-    alcohol: string | null;
-    price: string | null;
+    alcohol: number | null;
+    price: number | null;
     image: string | null;
     region: {
       country: string | null;
@@ -37,8 +37,8 @@ export interface AlkoData {
         price: number | null;
       };
       [key: string]: {
-        id?: string | null;
-        alkoId?: string | null;
+        id?: number | null;
+        alkoId?: number | null;
         ratings_average: number | null;
         ratings_count: number | null;
         price: number | null;

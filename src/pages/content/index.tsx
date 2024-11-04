@@ -44,15 +44,15 @@ if (wineNameContainer) {
 
 } else if (productContainers.length > 0) {
   productContainers.forEach((container: Element) => {
-    let price: string = '';
+    let priceString: string = '';
     const priceSpan: HTMLSpanElement | null = container.querySelector('span[itemprop="price"]');
     if (priceSpan) {
-      price = priceSpan.getAttribute('content') || '';
-      console.log('Price:', price);
+      priceString = priceSpan.getAttribute('content') || '';
+      console.log('Price:', priceString);
     } else {
       console.log('Price span not found in this container.');
     }
-    console.log(price)
+    console.log(priceString)
 
     console.log('Product Data Container:', container);
     const productData: string | null = container.getAttribute('data-product-data');
@@ -65,9 +65,17 @@ if (wineNameContainer) {
       const hasYear: RegExpMatchArray | null = lastWord.match(/(20\d{2}|19\d{2})/);
       const wineName: string = hasYear ? wineNameVintage.replace(lastWord, '').trim() : wineNameVintage;
       const vintage: string | null = hasYear ? lastWord : null;
-      const alkoId: number = parseInt(parsedData.id, 10);
+
+      const alkoId: number = parseInt(parsedData.id.toString(), 10);
+      const size: number = parseFloat(parsedData.size.toString());
+      const price: number = parseFloat(priceString);
+      const alcohol: number = parseFloat(parsedData.alcohol.toString());
+
       parsedData.vintage = vintage;
       parsedData.name = wineName;
+      parsedData.id = alkoId;
+      parsedData.size = size;
+      parsedData.alcohol = alcohol;
       parsedData.price = price;
 
       console.log('Wine Name:', wineName);
@@ -100,7 +108,7 @@ function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null ):
   const wineName = parsedData.name;
   console.log('Fetching wine details for:', wineName);
   chrome.runtime.sendMessage({ action: "fetch_rating", parsedData }, (response: { success: boolean; data: FilteredData; error?: string }) => {
-    console.log('Message sent for:', wineName, 'Response:', response);
+    console.log('Message sent for:', parsedData, 'Response:', response);
     if (response.success) {
       const wineDetails: FilteredData = response.data;
       wineDetails.timestamp = new Date().getTime();

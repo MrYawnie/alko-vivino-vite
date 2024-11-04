@@ -5,6 +5,7 @@ import { ArrowUpDown } from "lucide-react";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@radix-ui/react-tooltip";
 import { TooltipProvider } from "./ui/tooltip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -69,12 +70,17 @@ export const columns: ColumnDef<Wine>[] = [
         </div>
       );
     },
-    cell: ({ row }) => {
+    cell: ({ row, getValue }) => {
+      const isExpanded = row.getIsExpanded();
+      const subItemsCount = Object.keys(row.original.statistics).length;
+      const canExpand = subItemsCount > 1;
+
       const alkoName = row.original.alkoName;
       const statistics = row.original.statistics;
       const keys = Object.keys(statistics).filter(key => key !== 'all');
       return (
         <div>
+          {canExpand && (isExpanded ? ' ▲' : ' ▼')}
           {alkoName} (
           {keys.map((key, index) => (
             <span key={key}>
@@ -125,27 +131,31 @@ export const columns: ColumnDef<Wine>[] = [
     accessorKey: "statistics.all.ratings_average",
     header: ({ column }) => {
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Average Rating and Count
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <>
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Average Rating and Count
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Vintage</TableHead>
+                <TableHead>Rating</TableHead>
+                <TableHead>Price</TableHead>
+              </TableRow>
+            </TableHeader>
+          </Table>
+        </>
       );
     },
     cell: ({ row }) => {
       const statistics = row.original.statistics;
       return (
-        <table>
-          <thead>
-            <tr>
-              <th>Vintage</th>
-              <th>Rating</th>
-              <th>Price</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableBody>
             {Object.keys(statistics).map((key) => {
               if (key === 'all') return null; // Skip 'all' key
               const { ratings_average, ratings_count, price } = statistics[key];
@@ -153,9 +163,9 @@ export const columns: ColumnDef<Wine>[] = [
               const count = ratings_count || "N/A";
               const priceValue = price || "N/A";
               return (
-                <tr key={key}>
-                  <td>{key}</td>
-                  <td>
+                <TableRow key={key}>
+                  <TableCell>{key}</TableCell>
+                  <TableCell>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
@@ -166,13 +176,13 @@ export const columns: ColumnDef<Wine>[] = [
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
-                  </td>
-                  <td>{priceValue}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell>{priceValue}</TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       );
     },
   },
