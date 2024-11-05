@@ -44,5 +44,5 @@ export interface AlkoData {
         price: number | null;
       };
     };
-    timestamp?: number;
+    timestamp: number;
   }

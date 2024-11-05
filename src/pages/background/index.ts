@@ -86,6 +86,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
               region: data.hits[0].winery?.region.name || null,
             },
             statistics: statistics,
+            timestamp: new Date().getTime(),
           };
 
           console.log('filteredData:', filteredData);

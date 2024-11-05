@@ -60,11 +60,20 @@ if (wineNameContainer) {
       console.log('Product Data:', productData);
       const parsedData: AlkoData = JSON.parse(productData);
       console.log('Parsed Data:', parsedData);
+
       const wineNameVintage: string = parsedData.name;
-      const lastWord: string = wineNameVintage.split(' ').pop() || '';
-      const hasYear: RegExpMatchArray | null = lastWord.match(/(20\d{2}|19\d{2})/);
-      const wineName: string = hasYear ? wineNameVintage.replace(lastWord, '').trim() : wineNameVintage;
-      const vintage: string | null = hasYear ? lastWord : null;
+      const words: string[] = wineNameVintage.split(' ');
+      let vintage: string | null = null;
+      let wineName: string = wineNameVintage;
+
+      for (let i = words.length - 1; i >= 0; i--) {
+        const word: string = words[i];
+        if (word.match(/(20\d{2}|19\d{2})/)) {
+          vintage = word;
+          wineName = words.slice(0, i).join(' ');
+          break;
+        }
+      }
 
       const alkoId: number = parseInt(parsedData.id.toString(), 10);
       const size: number = parseFloat(parsedData.size.toString());
@@ -80,13 +89,15 @@ if (wineNameContainer) {
 
       console.log('Wine Name:', wineName);
 
-      chrome.storage.local.get(wineName, (data: { [key: string]: any }) => {
+      chrome.storage.local.get(wineName, (data: { [key: string]: FilteredData }) => {
         console.log('Attempting to get from storage:', wineName);
         if (data[wineName]) {
           console.log('Found wine details in local storage:', data[wineName]);
           const now: number = new Date().getTime();
-          const storedData: any = data[wineName];
-          if (storedData && now - storedData.timestamp < expirationTime) {
+          const storedData: FilteredData = data[wineName];
+          const vintage: string = parsedData.vintage || 'all';
+
+          if (storedData.statistics[vintage] && now - storedData.timestamp < expirationTime) {
             console.log('Using cached data:', storedData);
             displayWineDetails(storedData, container as HTMLElement, vintage);
           } else {
@@ -117,6 +128,7 @@ function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null ):
         if (result[wineName]) {
           const existingWineDetails: FilteredData = result[wineName];
           const vintage: string = parsedData.vintage || 'all';
+
           if (vintage && wineDetails.statistics[vintage] && !existingWineDetails.statistics[vintage]) {
             existingWineDetails.statistics[vintage] = wineDetails.statistics[vintage];
           }
