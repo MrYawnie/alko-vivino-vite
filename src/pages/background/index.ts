@@ -1,8 +1,8 @@
+import { AlkoData, FilteredData } from '@src/lib/types';
+
 interface WineRequest {
   action: string;
-  wineName: string;
-  alkoId: string | null;
-  vintage: string;
+  parsedData: AlkoData;
 }
 
 interface WineResponse {
@@ -11,38 +11,18 @@ interface WineResponse {
   error?: string;
 }
 
-interface FilteredData {
-  id: string | null;
-  name: string | null;
-  alkoId: string | null;
-  alkoName: string | null;
-  alcohol: number | null;
-  image: string | null;
-  region: {
-    country: string | null;
-    name: string | null;
-    region: string | null;
-  };
-  statistics: {
-    all: {
-      ratings_average: number | null;
-      ratings_count: number | null;
-    };
-    [key: string]: {
-      id?: string | null;
-      ratings_average: number | null;
-      ratings_count: number | null;
-    };
-  };
-}
-
 console.log('Background script running...');
 
 chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runtime.MessageSender, sendResponse: (response: WineResponse) => void) => {
+  console.log('request:', request);
   if (request.action === "fetch_rating") {
-    const wineName: string = request.wineName;
-    const alkoId: string | null = request.alkoId;
-    const vintage: string = request.vintage;
+    const wineName: string = request.parsedData.name;
+    const alkoId: number | null = request.parsedData.id;
+    const alcohol: number = request.parsedData.alcohol;
+    const vintage: string = request.parsedData.vintage ?? '';
+    const origin: string = request.parsedData.origin;
+    const category: string = request.parsedData.category;
+    const price: number = request.parsedData.price;
 
     console.log('wineName:', wineName);
 
@@ -70,29 +50,43 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
       .then((data: any) => {
         console.log('data:', data);
         if (data.hits && data.hits.length > 0) {
+
+          const statistics: any = {
+            all: {
+              alkoId: alkoId || null,
+              ratings_average: data.hits[0].statistics?.ratings_average || null,
+              ratings_count: data.hits[0].statistics?.ratings_count || null,
+              price: price,
+            },
+          };
+        
+          if (vintage) {
+            statistics[vintage] = {
+              id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
+              alkoId: alkoId || null,
+              ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
+              ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
+              price: price,
+            };
+          }
+
           const filteredData: FilteredData = {
             id: data.hits[0].vintages[0].id || null,
             name: data.hits[0].name || null,
             alkoId: alkoId || null,
             alkoName: wineName,
-            alcohol: data.hits[0].alcohol || null,
+            category: category || null,
+            alcohol: alcohol || null,
+            price: price || null,
             image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
             region: {
-              country: data.hits[0].region?.country || data.hits[0].winery?.region.country || null,
+              country: origin || null,
+              countryCode: data.hits[0].region?.country || data.hits[0].winery?.region.country || null,
               name: data.hits[0].region?.name || data.hits[0].winery?.region.name || null,
               region: data.hits[0].winery?.region.name || null,
             },
-            statistics: {
-              all: {
-                ratings_average: data.hits[0].statistics?.ratings_average || null,
-                ratings_count: data.hits[0].statistics?.ratings_count || null,
-              },
-              [vintage]: {
-                id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
-                ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
-                ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
-              },
-            }
+            statistics: statistics,
+            timestamp: new Date().getTime(),
           };
 
           console.log('filteredData:', filteredData);

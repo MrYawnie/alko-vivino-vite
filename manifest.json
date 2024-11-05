@@ -15,6 +15,9 @@
       "32": "icon-32.png"
     }
   },
+  "chrome_url_overrides": {
+    "newtab": "src/pages/newtab/index.html"
+  },
   "icons": {
     "128": "icon-128.png"
   },
@@ -44,7 +47,9 @@
         "icon-128.png",
         "icon-32.png",
         "src/pages/newtab/index.html",
-        "src/pages/newtab/index.tsx"
+        "src/pages/newtab/index.tsx",
+        "src/components/columns.tsx",
+        "src/components/data-table.tsx"
       ],
       "matches": []
     }
