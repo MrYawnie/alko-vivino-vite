@@ -34,14 +34,16 @@ export interface AlkoData {
       all: {
         ratings_average: number | null;
         ratings_count: number | null;
-        price: number | null;
       };
-      [key: string]: {
+      [vintage: string]: {
         id?: number | null;
         alkoId?: number | null;
         ratings_average: number | null;
         ratings_count: number | null;
-        price: number | null;
+        price?: number | null;
+        [size: number]: {
+          price: number | null;
+        };
       };
     };
     timestamp: number;

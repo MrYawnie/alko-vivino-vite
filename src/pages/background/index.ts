@@ -23,6 +23,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
     const origin: string = request.parsedData.origin;
     const category: string = request.parsedData.category;
     const price: number = request.parsedData.price;
+    const size: number = request.parsedData.size;
 
     console.log('wineName:', wineName);
 
@@ -56,7 +57,6 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
               alkoId: alkoId || null,
               ratings_average: data.hits[0].statistics?.ratings_average || null,
               ratings_count: data.hits[0].statistics?.ratings_count || null,
-              price: price,
             },
           };
         
@@ -67,6 +67,9 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
               ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
               ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
               price: price,
+              [size]: {
+                price: price,
+              },
             };
           }
 

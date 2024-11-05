@@ -96,17 +96,26 @@ if (wineNameContainer) {
           const now: number = new Date().getTime();
           const storedData: FilteredData = data[wineName];
           const vintage: string = parsedData.vintage || 'all';
+          const size: number = parsedData.size;
 
           if (storedData.statistics[vintage] && now - storedData.timestamp < expirationTime) {
-            console.log('Using cached data:', storedData);
-            displayWineDetails(storedData, container as HTMLElement, vintage);
+            if (vintage && storedData.statistics[vintage][size]) {
+              console.log('Using cached data:', storedData);
+              displayWineDetails(storedData, container as HTMLElement, vintage);
+            } else {
+              console.log('Fetching new data for:', wineName);
+              fetchWineDetails(parsedData, container as HTMLElement);
+            }
+
+            /* console.log('Using cached data:', storedData);
+            displayWineDetails(storedData, container as HTMLElement, vintage); */
           } else {
             console.log('Fetching new data for:', wineName);
-            fetchWineDetails(parsedData, container as HTMLElement );
+            fetchWineDetails(parsedData, container as HTMLElement);
           }
         } else {
           console.log('No saved wine details found in local storage. Fetching details from API for wine:', wineName);
-          fetchWineDetails(parsedData, container as HTMLElement );
+          fetchWineDetails(parsedData, container as HTMLElement);
         }
       });
     }
@@ -115,7 +124,7 @@ if (wineNameContainer) {
   console.error('Failed to find wine name on the page');
 }
 
-function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null ): void {
+function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null): void {
   const wineName = parsedData.name;
   console.log('Fetching wine details for:', wineName);
   chrome.runtime.sendMessage({ action: "fetch_rating", parsedData }, (response: { success: boolean; data: FilteredData; error?: string }) => {
@@ -128,10 +137,16 @@ function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null ):
         if (result[wineName]) {
           const existingWineDetails: FilteredData = result[wineName];
           const vintage: string = parsedData.vintage || 'all';
+          const size: number = parsedData.size;
 
           if (vintage && wineDetails.statistics[vintage] && !existingWineDetails.statistics[vintage]) {
             existingWineDetails.statistics[vintage] = wineDetails.statistics[vintage];
           }
+
+          if (size && wineDetails.statistics[vintage] && wineDetails.statistics[vintage][size] && !existingWineDetails.statistics[vintage][size]) {
+            existingWineDetails.statistics[vintage][size] = wineDetails.statistics[vintage][size];
+          }
+
           chrome.storage.local.set({ [wineName]: existingWineDetails }, () => {
             console.log('Updated wineDetails with vintage:', existingWineDetails);
             displayWineDetails(existingWineDetails, container, vintage);
