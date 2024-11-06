@@ -64,7 +64,6 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
               id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
               ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
               ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
-              price: price,
               size: {
                 [size]: {
                   price: price,
@@ -80,9 +79,8 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
             alkoName: wineName,
             category: category || null,
             alcohol: alcohol || null,
-            image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
+            // image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
             region: {
-              country: origin || null,
               countryCode: data.hits[0].region?.country || data.hits[0].winery?.region.country || null,
               name: data.hits[0].region?.name || data.hits[0].winery?.region.name || null,
               region: data.hits[0].winery?.region.name || null,

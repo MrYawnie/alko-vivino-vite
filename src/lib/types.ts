@@ -21,9 +21,8 @@ export interface FilteredData {
   alkoName: string | null;
   category: string | null;
   alcohol: number | null;
-  image: string | null;
+  // image: string | null;
   region: {
-    country: string | null;
     countryCode: string | null;
     name: string | null;
     region: string | null;
@@ -37,7 +36,6 @@ export interface FilteredData {
       id?: number | null;
       ratings_average: number | null;
       ratings_count: number | null;
-      price?: number | null;
       size?: {
         [size: number]: {
           price: number | null;
