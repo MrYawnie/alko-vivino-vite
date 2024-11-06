@@ -99,13 +99,16 @@ if (wineNameContainer) {
           const size: number = parsedData.size;
 
           if (storedData.statistics[vintage] && now - storedData.timestamp < expirationTime) {
-            if (vintage && storedData.statistics[vintage][size]) {
+            if (vintage && storedData.statistics[vintage].size?.[size]) {
               console.log('Using cached data:', storedData);
               displayWineDetails(storedData, container as HTMLElement, vintage);
             } else {
-              console.log('Fetching new data for:', wineName);
-              fetchWineDetails(parsedData, container as HTMLElement);
+              console.log('Adding new size to cached data:', storedData);
+              chrome.storage.local.set({ [wineName]: storedData }, () => {
+                console.log('Updated wineDetails with vintage' + vintage + ' and size ' + size + ':', storedData);
+              });
             }
+            // fetchWineDetails(parsedData, container as HTMLElement);
 
             /* console.log('Using cached data:', storedData);
             displayWineDetails(storedData, container as HTMLElement, vintage); */
@@ -143,8 +146,10 @@ function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null): 
             existingWineDetails.statistics[vintage] = wineDetails.statistics[vintage];
           }
 
-          if (size && wineDetails.statistics[vintage] && wineDetails.statistics[vintage][size] && !existingWineDetails.statistics[vintage][size]) {
-            existingWineDetails.statistics[vintage][size] = wineDetails.statistics[vintage][size];
+          if (size && wineDetails.statistics[vintage] && wineDetails.statistics[vintage].size?.[size] && !existingWineDetails.statistics[vintage].size?.[size]) {
+            if (existingWineDetails.statistics[vintage].size) {
+              existingWineDetails.statistics[vintage].size[size] = wineDetails.statistics[vintage].size?.[size];
+            }
           }
 
           chrome.storage.local.set({ [wineName]: existingWineDetails }, () => {
