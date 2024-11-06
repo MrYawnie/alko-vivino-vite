@@ -106,6 +106,7 @@ if (wineNameContainer) {
               console.log('Adding new size to cached data:', storedData);
               chrome.storage.local.set({ [wineName]: storedData }, () => {
                 console.log('Updated wineDetails with vintage' + vintage + ' and size ' + size + ':', storedData);
+                displayWineDetails(storedData, container as HTMLElement, vintage);
               });
             }
             // fetchWineDetails(parsedData, container as HTMLElement);
@@ -144,11 +145,19 @@ function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null): 
 
           if (vintage && wineDetails.statistics[vintage] && !existingWineDetails.statistics[vintage]) {
             existingWineDetails.statistics[vintage] = wineDetails.statistics[vintage];
+            chrome.storage.local.set({ [wineName]: existingWineDetails }, () => {
+              console.log('Updated wineDetails with vintage:', existingWineDetails);
+              displayWineDetails(existingWineDetails, container, vintage);
+            });
           }
 
           if (size && wineDetails.statistics[vintage] && wineDetails.statistics[vintage].size?.[size] && !existingWineDetails.statistics[vintage].size?.[size]) {
             if (existingWineDetails.statistics[vintage].size) {
               existingWineDetails.statistics[vintage].size[size] = wineDetails.statistics[vintage].size?.[size];
+              chrome.storage.local.set({ [wineName]: existingWineDetails }, () => {
+                console.log('Updated wineDetails with size:', existingWineDetails);
+                displayWineDetails(existingWineDetails, container, vintage);
+              });
             }
           }
 
