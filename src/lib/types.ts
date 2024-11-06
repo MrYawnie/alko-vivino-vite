@@ -27,7 +27,7 @@ export interface FilteredData {
     name: string | null;
     region: string | null;
   };
-  statistics: {
+  vintage: {
     all: {
       ratings_average: number | null;
       ratings_count: number | null;

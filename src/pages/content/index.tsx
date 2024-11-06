@@ -25,7 +25,7 @@ if (wineNameContainer) {
       const storedData: any = data[wineName];
 
       if (storedData && now - storedData.timestamp < expirationTime) {
-        if (vintage && storedData.statistics[vintage]) {
+        if (vintage && storedData.vintage[vintage]) {
           console.log('Using cached data:', storedData);
           displayWineDetails(storedData, null, vintage);
         } else {
@@ -98,8 +98,8 @@ if (wineNameContainer) {
           const vintage: string = parsedData.vintage || 'all';
           const size: number = parsedData.size;
 
-          if (storedData.statistics[vintage] && now - storedData.timestamp < expirationTime) {
-            if (vintage && storedData.statistics[vintage].size?.[size]) {
+          if (storedData.vintage[vintage] && now - storedData.timestamp < expirationTime) {
+            if (vintage && storedData.vintage[vintage].size?.[size]) {
               console.log('Using cached data:', storedData);
               displayWineDetails(storedData, container as HTMLElement, vintage);
             } else {
@@ -143,17 +143,17 @@ function fetchWineDetails(parsedData: AlkoData, container: HTMLElement | null): 
           const vintage: string = parsedData.vintage || 'all';
           const size: number = parsedData.size;
 
-          if (vintage && wineDetails.statistics[vintage] && !existingWineDetails.statistics[vintage]) {
-            existingWineDetails.statistics[vintage] = wineDetails.statistics[vintage];
+          if (vintage && wineDetails.vintage[vintage] && !existingWineDetails.vintage[vintage]) {
+            existingWineDetails.vintage[vintage] = wineDetails.vintage[vintage];
             chrome.storage.local.set({ [wineName]: existingWineDetails }, () => {
               console.log('Updated wineDetails with vintage:', existingWineDetails);
               displayWineDetails(existingWineDetails, container, vintage);
             });
           }
 
-          if (size && wineDetails.statistics[vintage] && wineDetails.statistics[vintage].size?.[size] && !existingWineDetails.statistics[vintage].size?.[size]) {
-            if (existingWineDetails.statistics[vintage].size) {
-              existingWineDetails.statistics[vintage].size[size] = wineDetails.statistics[vintage].size?.[size];
+          if (size && wineDetails.vintage[vintage] && wineDetails.vintage[vintage].size?.[size] && !existingWineDetails.vintage[vintage].size?.[size]) {
+            if (existingWineDetails.vintage[vintage].size) {
+              existingWineDetails.vintage[vintage].size[size] = wineDetails.vintage[vintage].size?.[size];
               chrome.storage.local.set({ [wineName]: existingWineDetails }, () => {
                 console.log('Updated wineDetails with size:', existingWineDetails);
                 displayWineDetails(existingWineDetails, container, vintage);
@@ -186,7 +186,7 @@ function displayWineDetails(wineDetails: FilteredData, container: HTMLElement | 
   const ratingElement: HTMLDivElement = document.createElement('div');
 
   if (vintage) {
-    const vintageDetails: any = wineDetails.statistics[vintage] || null;
+    const vintageDetails: any = wineDetails.vintage[vintage] || null;
     console.log('vintageDetails:', vintageDetails);
 
     if (vintageDetails) {
@@ -194,8 +194,8 @@ function displayWineDetails(wineDetails: FilteredData, container: HTMLElement | 
       vintageLink.href = `https://www.vivino.com/wines/${vintageDetails.id}`;
       vintageLink.target = "_blank";
 
-      if (wineDetails.statistics) {
-        const overallRating: string = `All: ${wineDetails.statistics.all.ratings_average} ★ | ${wineDetails.statistics.all.ratings_count} ratings`;
+      if (wineDetails.vintage) {
+        const overallRating: string = `All: ${wineDetails.vintage.all.ratings_average} ★ | ${wineDetails.vintage.all.ratings_count} ratings`;
         overallRatingElement.textContent = overallRating;
         vivinoLink.href = `https://www.vivino.com/wines/${wineDetails.id}`;
         vivinoLink.target = "_blank";
@@ -206,7 +206,7 @@ function displayWineDetails(wineDetails: FilteredData, container: HTMLElement | 
       ratingElement.textContent = 'No vintage rating available';
     }
   } else {
-    overallRatingElement.textContent = wineDetails.statistics ? `All: ${wineDetails.statistics.ratings_average} ★ | ${wineDetails.statistics.ratings_count} ratings` : 'No rating available';
+    overallRatingElement.textContent = wineDetails.vintage ? `All: ${wineDetails.vintage.ratings_average} ★ | ${wineDetails.vintage.ratings_count} ratings` : 'No rating available';
     vivinoLink.href = `https://www.vivino.com/wines/${wineDetails.id}`;
     vivinoLink.target = "_blank";
   }
