@@ -1,207 +1,156 @@
 "use client"
 
-import { ColumnDef } from "@tanstack/react-table"
+import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "./ui/button";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@radix-ui/react-tooltip";
-import { TooltipProvider } from "./ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
+// Define the wine type
 export type Wine = {
   id: number;
   name: string;
-  alkoId: number;
   alkoName: string;
   category: string;
   alcohol: number;
-  price: string;
-  image: string;
+  ratings_average: number | null;
+  ratings_count: number;
   region: {
-    country: string;
+    countryCode: string;
     name: string;
     region: string;
   };
-  statistics: {
+  vintage: {
     [key: string]: {
       id?: number;
-      alkoId?: number;
       ratings_average: number | null;
       ratings_count: number;
-      price: number;
+      size?: {
+        [size: number]: {
+          price: number;
+          alkoId: number;
+        };
+      };
     };
   };
   timestamp: number;
-}
+};
 
 export const columns: ColumnDef<Wine>[] = [
   {
     accessorKey: "category",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Category
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Category
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
   },
   {
     accessorKey: "alkoName",
-    header: ({ column }) => {
-      return (
-        <div>
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-          <input
-            type="text"
-            placeholder="Filter by name"
-            onChange={(e) => column.setFilterValue(e.target.value)}
-          />
-        </div>
-      );
-    },
-    cell: ({ row, getValue }) => {
-      const isExpanded = row.getIsExpanded();
-      const subItemsCount = Object.keys(row.original.statistics).length;
-      const canExpand = subItemsCount > 1;
-
-      const alkoName = row.original.alkoName;
-      const statistics = row.original.statistics;
-      const keys = Object.keys(statistics).filter(key => key !== 'all');
-      return (
-        <div>
-          {canExpand && (isExpanded ? ' ▲' : ' ▼')}
-          {alkoName} (
-          {keys.map((key, index) => (
-            <span key={key}>
-              <a href={`https://alko.fi/tuotteet/${statistics[key].alkoId}`} target="_blank" rel="noopener noreferrer">
-                {key}
-              </a>
-              {index < keys.length - 1 && ", "}
-            </span>
-          ))}
-          )
-        </div>
-      );
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Name
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
   },
   {
     accessorKey: "alcohol",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Alcohol Content
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const alcohol = row.original.alcohol;
-      return `${alcohol} %`;
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Alcohol Content
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => `${row.original.alcohol} %`,
   },
   {
     accessorKey: "region.name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Region
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Region
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+  },
+  {
+    accessorKey: "ratings_average", // Ratings based on vintage
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Ratings Average
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+  },
+  {
+    id: "priceRange",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Price Range
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const prices: number[] = [];
+      Object.values(row.original.vintage).forEach(vintageDetail => {
+        const sizes = vintageDetail.size;
+        if (sizes) {
+          Object.values(sizes).forEach(detail => {
+            if (typeof detail.price === "number") prices.push(detail.price);
+          });
+        }
+      });
+      
+      const minPrice = Math.min(...prices) || 0;
+      const maxPrice = Math.max(...prices) || 0;
+
+      return `${minPrice} - ${maxPrice}`;
+    },
+    sortingFn: (rowA, rowB) => {
+      const getPriceRange = (row: typeof rowA) => {
+        const prices: number[] = [];
+        Object.values(row.original.vintage).forEach(vintageDetail => {
+          const sizes = vintageDetail.size;
+          if (sizes) {
+            Object.values(sizes).forEach(detail => {
+              if (typeof detail.price === "number") prices.push(detail.price);
+            });
+          }
+        });
+        
+        const minPrice = Math.min(...prices) || 0;
+        return minPrice;
+      };
+
+      return getPriceRange(rowA) - getPriceRange(rowB);
     },
   },
   {
-    accessorKey: "statistics.all.ratings_average",
-    header: ({ column }) => {
-      return (
-        <>
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Average Rating and Count
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Vintage</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Price</TableHead>
-              </TableRow>
-            </TableHeader>
-          </Table>
-        </>
-      );
-    },
+    // Country column remains unchanged for base data
+    accessorKey: "region.countryCode",
+    header: "Country",
     cell: ({ row }) => {
-      const statistics = row.original.statistics;
-      return (
-        <Table>
-          <TableBody>
-            {Object.keys(statistics).map((key) => {
-              if (key === 'all') return null; // Skip 'all' key
-              const { ratings_average, ratings_count, price } = statistics[key];
-              const average = ratings_average ? ratings_average.toFixed(1) : "N/A";
-              const count = ratings_count || "N/A";
-              const priceValue = price || "N/A";
-              return (
-                <TableRow key={key}>
-                  <TableCell>{key}</TableCell>
-                  <TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <span>{average} ★</span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <span>{count} ratings</span>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell>{priceValue}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      );
-    },
-  },
-  {
-    accessorKey: "price",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Price
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const price = parseFloat(row.original.price);
-      return `${price.toFixed(2)} €`;
+      const regionName = new Intl.DisplayNames(["en"], { type: "region" });
+      const countryCode = row.original.region.countryCode.toUpperCase();
+      return regionName.of(countryCode);
     },
   },
 ];

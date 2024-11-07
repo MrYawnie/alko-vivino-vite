@@ -1,14 +1,9 @@
 "use client"
 import * as React from "react"
-
 import {
   ColumnDef,
-  ColumnFiltersState,
-  SortingState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
   getExpandedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
@@ -21,36 +16,54 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@radix-ui/react-tooltip"
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
+// Define the wine type
+interface Wine {
+  id: number;
+  name: string;
+  alkoName: string;
+  category: string;
+  alcohol: number;
+  ratings_average: number | null;
+  ratings_count: number;
+  region: {
+    countryCode: string;
+    name: string;
+    region: string;
+  };
+  vintage: {
+    [key: string]: {
+      id?: number;
+      ratings_average: number | null;
+      ratings_count: number;
+      size?: {
+        [size: number]: {
+          price: number;
+          alkoId: number;
+        };
+      };
+    };
+  };
+  timestamp: number;
 }
 
-export function DataTable<TData, TValue>({
+interface DataTableProps<TValue> {
+  columns: ColumnDef<Wine, TValue>[];
+  data: Wine[];
+}
+
+export function DataTable<TValue>({
   columns,
   data,
-}: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
-
+}: DataTableProps<TValue>) {
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-    },
     getExpandedRowModel: getExpandedRowModel(),
-  })
+  });
 
   return (
     <div className="rounded-md border">
@@ -58,79 +71,51 @@ export function DataTable<TData, TValue>({
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
                         header.column.columnDef.header,
                         header.getContext()
                       )}
-                  </TableHead>
-                )
-              })}
+                </TableHead>
+              ))}
             </TableRow>
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <React.Fragment key={row.id}>
-                <TableRow
-                  data-state={row.getIsSelected() && "selected"}
-                  onClick={() => row.toggleExpanded()}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-                {row.getIsExpanded() && (
+          {table.getRowModel().rows.map((row) => (
+            <React.Fragment key={row.id}>
+              <TableRow
+                onClick={() => row.toggleExpanded()}
+              >
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+              {row.getIsExpanded() && Object.entries(row.original.vintage).map(([year, vintageDetail]) => (
+                <React.Fragment key={year}>
                   <TableRow>
                     <TableCell colSpan={columns.length}>
                       <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead></TableHead>
-                            <TableHead></TableHead>
-                            <TableHead></TableHead>
-                            <TableHead></TableHead>
-                            <TableHead></TableHead>
-                            <TableHead>Vintage</TableHead>
-                            <TableHead>Rating</TableHead>
-                            <TableHead>Price</TableHead>
-                          </TableRow>
-                        </TableHeader>
                         <TableBody>
-                          {Object.keys(row.original.statistics).map((key) => {
-                            if (key === 'all') return null; // Skip 'all' key
-                            const { ratings_average, ratings_count, price } = row.original.statistics[key];
-                            const average = ratings_average ? ratings_average.toFixed(1) : "N/A";
-                            const count = ratings_count || "N/A";
-                            const priceValue = price || "N/A";
+                          {vintageDetail.size && Object.entries(vintageDetail.size).map(([size, detail]) => {
+                            if (!detail) return null; // If the detail is undefined, skip it
+                            
+                            const parsedSize = parseInt(size, 10);
+                            const price = detail.price ?? "N/A"; // Default to "N/A" if undefined
+                            const alkoId = detail.alkoId ?? "N/A";
+
                             return (
-                              <TableRow key={key}>
-                                <TableCell></TableCell>
-                                <TableCell></TableCell>
-                                <TableCell></TableCell>
-                                <TableCell></TableCell>
-                                <TableCell></TableCell>
-                                <TableCell>{key}</TableCell>
-                                <TableCell>
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger>
-                                        <span>{average} ★</span>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <span>{count} ratings</span>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </TableCell>
-                                <TableCell>{priceValue}</TableCell>
+                              <TableRow key={`${year}-${parsedSize}`}>
+                                <TableCell>{year}</TableCell>
+                                <TableCell>{vintageDetail.ratings_average?.toFixed(1) || "N/A"}</TableCell>
+                                <TableCell>{size}</TableCell>
+                                <TableCell>{price}</TableCell>
+                                {/* <TableCell>{alkoId}</TableCell> */}
                               </TableRow>
                             );
                           })}
@@ -138,18 +123,12 @@ export function DataTable<TData, TValue>({
                       </Table>
                     </TableCell>
                   </TableRow>
-                )}
-              </React.Fragment>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
+                </React.Fragment>
+              ))}
+            </React.Fragment>
+          ))}
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }
