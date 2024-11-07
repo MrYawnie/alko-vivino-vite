@@ -22,16 +22,18 @@ export interface FilteredData {
   category: string | null;
   alcohol: number | null;
   // image: string | null;
+  ratings_average: number | null;
+  ratings_count: number | null;
   region: {
     countryCode: string | null;
     name: string | null;
     region: string | null;
   };
   vintage: {
-    all: {
+    /* all: {
       ratings_average: number | null;
       ratings_count: number | null;
-    };
+    }; */
     [vintage: string]: {
       id?: number | null;
       ratings_average: number | null;
