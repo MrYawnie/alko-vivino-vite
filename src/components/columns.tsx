@@ -38,27 +38,43 @@ export type Wine = {
 export const columns: ColumnDef<Wine>[] = [
   {
     accessorKey: "category",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Category
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: ({ column }) => {
+      return (
+        <div>
+          <input
+            type="text"
+            placeholder="Category"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "alkoName",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Name
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: ({ column }) => {
+      return (
+        <div>
+          <input
+            type="text"
+            placeholder="Name"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "alcohol",
@@ -74,35 +90,28 @@ export const columns: ColumnDef<Wine>[] = [
     cell: ({ row }) => `${row.original.alcohol} %`,
   },
   {
-    accessorKey: "region.name",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Region
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-  },
-  {
     accessorKey: "ratings_average", // Ratings based on vintage
     header: ({ column }) => (
       <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Ratings Average
         <ArrowUpDown className="ml-2 h-4 w-4" />
       </Button>
     ),
+    cell: ({ row }) => {
+      const ratings = row.original.ratings_average;
+      return ratings !== null ? `${ratings} ★` : "No ratings";
+    },
   },
   {
     id: "priceRange",
+    accessorKey: "vintage[0].size[0].price",
     header: ({ column }) => (
       <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      variant="ghost"
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Price Range
         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -121,8 +130,8 @@ export const columns: ColumnDef<Wine>[] = [
       
       const minPrice = Math.min(...prices) || 0;
       const maxPrice = Math.max(...prices) || 0;
-
-      return `${minPrice} - ${maxPrice}`;
+      
+      return `${minPrice} - ${maxPrice} €`;
     },
     sortingFn: (rowA, rowB) => {
       const getPriceRange = (row: typeof rowA) => {
@@ -139,18 +148,54 @@ export const columns: ColumnDef<Wine>[] = [
         const minPrice = Math.min(...prices) || 0;
         return minPrice;
       };
-
+      
       return getPriceRange(rowA) - getPriceRange(rowB);
     },
   },
   {
     // Country column remains unchanged for base data
     accessorKey: "region.countryCode",
-    header: "Country",
+    header: ({ column }) => {
+      return (
+        <div>
+          <input
+            type="text"
+            placeholder="Country"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
     cell: ({ row }) => {
       const regionName = new Intl.DisplayNames(["en"], { type: "region" });
       const countryCode = row.original.region.countryCode.toUpperCase();
       return regionName.of(countryCode);
+    },
+  },
+  {
+    accessorKey: "region.name",
+    header: ({ column }) => {
+      return (
+        <div>
+          <input
+            type="text"
+            placeholder="Region"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
     },
   },
 ];

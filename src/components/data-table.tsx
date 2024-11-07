@@ -2,9 +2,13 @@
 import * as React from "react"
 import {
   ColumnDef,
+  ColumnFiltersState,
+  SortingState,
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
 
@@ -58,11 +62,23 @@ export function DataTable<TValue>({
   columns,
   data,
 }: DataTableProps<TValue>) {
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      sorting,
+      columnFilters,
+    },
     getExpandedRowModel: getExpandedRowModel(),
+
   });
 
   return (
@@ -76,9 +92,9 @@ export function DataTable<TValue>({
                   {header.isPlaceholder
                     ? null
                     : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
                 </TableHead>
               ))}
             </TableRow>
@@ -104,7 +120,7 @@ export function DataTable<TValue>({
                         <TableBody>
                           {vintageDetail.size && Object.entries(vintageDetail.size).map(([size, detail]) => {
                             if (!detail) return null; // If the detail is undefined, skip it
-                            
+
                             const parsedSize = parseInt(size, 10);
                             const price = detail.price ?? "N/A"; // Default to "N/A" if undefined
                             const alkoId = detail.alkoId ?? "N/A";
