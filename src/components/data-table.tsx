@@ -121,15 +121,15 @@ export function DataTable<TValue>({
                           {vintageDetail.size && Object.entries(vintageDetail.size).map(([size, detail]) => {
                             if (!detail) return null; // If the detail is undefined, skip it
 
-                            const parsedSize = parseInt(size, 10);
-                            const price = detail.price ?? "N/A"; // Default to "N/A" if undefined
+                            const parsedSize = `${size} l`;
+                            const price = detail.price ? `${detail.price} €` : "N/A"; // Default to "N/A" if undefined
                             const alkoId = detail.alkoId ?? "N/A";
 
                             return (
                               <TableRow key={`${year}-${parsedSize}`}>
                                 <TableCell>{year}</TableCell>
-                                <TableCell>{vintageDetail.ratings_average?.toFixed(1) || "N/A"}</TableCell>
-                                <TableCell>{size}</TableCell>
+                                <TableCell>{vintageDetail.ratings_average?.toFixed(1) || "N/A"} ★</TableCell>
+                                <TableCell>{parsedSize}</TableCell>
                                 <TableCell>{price}</TableCell>
                                 {/* <TableCell>{alkoId}</TableCell> */}
                               </TableRow>

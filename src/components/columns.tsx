@@ -75,6 +75,31 @@ export const columns: ColumnDef<Wine>[] = [
         </div>
       );
     },
+    cell: ({ row, getValue }) => {
+      const isExpanded = row.getIsExpanded();
+      const subItemsCount = Object.keys(row.original.vintage).length;
+      const canExpand = subItemsCount > 1;
+
+      const alkoName = row.original.alkoName;
+      const statistics = row.original.vintage;
+      const keys = Object.keys(statistics).filter(key => key !== 'all');
+      return (
+        <div>
+          {canExpand && (isExpanded ? ' ▲' : ' ▼')}
+          {alkoName} (
+          {keys.map((key, index) => (
+            <span key={key}>
+              {/* <a href={`https://alko.fi/tuotteet/${statistics[key].alkoId}`} target="_blank" rel="noopener noreferrer">
+                {key}
+              </a> */}
+              {key}
+              {index < keys.length - 1 && ", "}
+            </span>
+          ))}
+          )
+        </div>
+      );
+    },
   },
   {
     accessorKey: "alcohol",
@@ -93,8 +118,8 @@ export const columns: ColumnDef<Wine>[] = [
     accessorKey: "ratings_average", // Ratings based on vintage
     header: ({ column }) => (
       <Button
-      variant="ghost"
-      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Ratings Average
         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -110,8 +135,8 @@ export const columns: ColumnDef<Wine>[] = [
     accessorKey: "vintage[0].size[0].price",
     header: ({ column }) => (
       <Button
-      variant="ghost"
-      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
       >
         Price Range
         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -127,10 +152,10 @@ export const columns: ColumnDef<Wine>[] = [
           });
         }
       });
-      
+
       const minPrice = Math.min(...prices) || 0;
       const maxPrice = Math.max(...prices) || 0;
-      
+
       return `${minPrice} - ${maxPrice} €`;
     },
     sortingFn: (rowA, rowB) => {
@@ -144,11 +169,11 @@ export const columns: ColumnDef<Wine>[] = [
             });
           }
         });
-        
+
         const minPrice = Math.min(...prices) || 0;
         return minPrice;
       };
-      
+
       return getPriceRange(rowA) - getPriceRange(rowB);
     },
   },
