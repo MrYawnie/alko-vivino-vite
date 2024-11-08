@@ -121,6 +121,7 @@ import { AlkoData, FilteredData } from '@src/lib/types';
       chrome.runtime.sendMessage({ action: "fetch_rating", parsedData }, async (response: { success: boolean; data: FilteredData; error?: string }) => {
         if (response.success) {
           const wineDetails: FilteredData = response.data;
+          console.log('Fetched wine details:', wineDetails);
           wineDetails.timestamp = Date.now();
 
           const existingWineData: FilteredData | undefined = await getStorageData(parsedData.name);

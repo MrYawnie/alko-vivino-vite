@@ -90,6 +90,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
             ratings_count: data.hits[0].statistics?.ratings_count || null,
             // image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
             region: {
+              countryName: origin || data.hits[0].winery?.region.country || null,
               countryCode: data.hits[0].region?.country || data.hits[0].winery?.region.country || null,
               name: data.hits[0].region?.name || data.hits[0].winery?.region.name || null,
               region: data.hits[0].winery?.region.name || null,

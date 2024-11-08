@@ -117,6 +117,15 @@ export function DataTable<TValue>({
                   <TableRow>
                     <TableCell colSpan={columns.length}>
                       <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Year</TableHead>
+                            <TableHead>Avg. Rating</TableHead>
+                            <TableHead>Size</TableHead>
+                            <TableHead>Price</TableHead>
+                            {/* <TableHead>Alko ID</TableHead> */}
+                          </TableRow>
+                        </TableHeader>
                         <TableBody>
                           {vintageDetail.size && Object.entries(vintageDetail.size).map(([size, detail]) => {
                             if (!detail) return null; // If the detail is undefined, skip it
@@ -124,13 +133,14 @@ export function DataTable<TValue>({
                             const parsedSize = `${size} l`;
                             const price = detail.price ? `${detail.price} €` : "N/A"; // Default to "N/A" if undefined
                             const alkoId = detail.alkoId ?? "N/A";
+                            const pricePerLiter = detail.price ? `${(detail.price / parseFloat(size)).toFixed(2)} €/l` : "N/A";
 
                             return (
                               <TableRow key={`${year}-${parsedSize}`}>
                                 <TableCell>{year}</TableCell>
                                 <TableCell>{vintageDetail.ratings_average?.toFixed(1) || "N/A"} ★</TableCell>
                                 <TableCell>{parsedSize}</TableCell>
-                                <TableCell>{price}</TableCell>
+                                <TableCell>{price} ({pricePerLiter})</TableCell>
                                 {/* <TableCell>{alkoId}</TableCell> */}
                               </TableRow>
                             );

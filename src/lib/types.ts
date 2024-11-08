@@ -25,6 +25,7 @@ export interface FilteredData {
   ratings_average: number | null;
   ratings_count: number | null;
   region: {
+    countryName: string | null;
     countryCode: string | null;
     name: string | null;
     region: string | null;

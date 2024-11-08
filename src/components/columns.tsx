@@ -1,9 +1,10 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Star } from "lucide-react";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { useState } from "react";
 
 // Define the wine type
 export type Wine = {
@@ -116,32 +117,95 @@ export const columns: ColumnDef<Wine>[] = [
   },
   {
     accessorKey: "ratings_average", // Ratings based on vintage
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Ratings Average
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: ({ column }) => {
+      const [minRating, setMinRating] = useState(0);
+
+      const handleRatingClick = (rating: number) => {
+        setMinRating(rating);
+        column.setFilterValue(rating);
+      };
+
+      return (
+        <div className="flex flex-col space-y-2">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Ratings Average
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+          <div className="flex space-x-1 mt-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => handleRatingClick(star)}
+                /* className="text-yellow-500" */
+              >
+                {star <= minRating ? <Star fill="dark-gray" size={20} /> : <Star size={20}/>}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    },
     cell: ({ row }) => {
       const ratings = row.original.ratings_average;
       return ratings !== null ? `${ratings} ★` : "No ratings";
+    },
+    filterFn: (row, columnId, filterValue) => {
+      const rating = row.original.ratings_average;
+      return rating !== null && rating >= filterValue;
     },
   },
   {
     id: "priceRange",
     accessorKey: "vintage[0].size[0].price",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        Price Range
-        <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
+    header: ({ column }) => {
+      const [minPrice, setMinPrice] = useState("");
+      const [maxPrice, setMaxPrice] = useState("");
+
+      const handleFilterChange = () => {
+        column.setFilterValue([minPrice, maxPrice]);
+      };
+
+      const handleMinPriceChange = (value: string) => {
+        setMinPrice(value);
+        column.setFilterValue([value, maxPrice]);
+      };
+
+      const handleMaxPriceChange = (value: string) => {
+        setMaxPrice(value);
+        column.setFilterValue([minPrice, value]);
+      };
+
+      return (
+        <div className="flex flex-col space-y-2">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Price Range
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+          <div className="flex space-x-2">
+            <input
+              type="number"
+              placeholder="Min"
+              value={minPrice}
+              onChange={(e) => handleMinPriceChange(e.target.value)}
+              className="border px-2 py-1 rounded"
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              value={maxPrice}
+              onChange={(e) => handleMaxPriceChange(e.target.value)}
+              className="border px-2 py-1 rounded"
+            />
+          </div>
+        </div>
+      );
+    },
     cell: ({ row }) => {
       const prices: number[] = [];
       Object.values(row.original.vintage).forEach(vintageDetail => {
@@ -156,7 +220,7 @@ export const columns: ColumnDef<Wine>[] = [
       const minPrice = Math.min(...prices) || 0;
       const maxPrice = Math.max(...prices) || 0;
 
-      return `${minPrice} - ${maxPrice} €`;
+      return minPrice === maxPrice ? `${minPrice} €` : `${minPrice} - ${maxPrice} €`;
     },
     sortingFn: (rowA, rowB) => {
       const getPriceRange = (row: typeof rowA) => {
@@ -176,8 +240,75 @@ export const columns: ColumnDef<Wine>[] = [
 
       return getPriceRange(rowA) - getPriceRange(rowB);
     },
+    /* filterFn: (row, columnId, filterValue) => {
+      const [min, max] = filterValue;
+      const prices: number[] = [];
+      Object.values(row.original.vintage).forEach((vintageDetail) => {
+        const sizes = vintageDetail.size;
+        if (sizes) {
+          Object.values(sizes).forEach((detail) => {
+            if (typeof detail.price === "number") prices.push(detail.price);
+          });
+        }
+      });
+
+      const rowMinPrice = Math.min(...prices) || 0;
+      const rowMaxPrice = Math.max(...prices) || 0;
+      
+      debugger;
+
+      if (min && rowMinPrice < parseFloat(min)) {
+        return false;
+      }
+      if (max && rowMaxPrice > parseFloat(max)) {
+        return false;
+      }
+      return true;
+    }, */
+    filterFn: (row, columnId, filterValue) => {
+      const [min, max] = filterValue;
+      const prices: number[] = [];
+
+      // Gather all price points for each vintage and size
+      Object.values(row.original.vintage).forEach((vintageDetail) => {
+        const sizes = vintageDetail.size;
+        if (sizes) {
+          Object.values(sizes).forEach((detail) => {
+            if (typeof detail.price === "number") prices.push(detail.price);
+          });
+        }
+      });
+
+      // If any price point is within the range, the row should be displayed
+      return prices.some(price => {
+        const isAboveMin = min ? price >= parseFloat(min) : true;
+        const isBelowMax = max ? price <= parseFloat(max) : true;
+        return isAboveMin && isBelowMax;
+      });
+    },
   },
   {
+    // Country column remains unchanged for base data
+    accessorKey: "region.countryName",
+    header: ({ column }) => {
+      return (
+        <div>
+          <input
+            type="text"
+            placeholder="Country"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
+  },
+  /* {
     // Country column remains unchanged for base data
     accessorKey: "region.countryCode",
     header: ({ column }) => {
@@ -198,11 +329,12 @@ export const columns: ColumnDef<Wine>[] = [
       );
     },
     cell: ({ row }) => {
+      if (!row.original.region.countryCode) return "";
       const regionName = new Intl.DisplayNames(["en"], { type: "region" });
       const countryCode = row.original.region.countryCode.toUpperCase();
       return regionName.of(countryCode);
     },
-  },
+  }, */
   {
     accessorKey: "region.name",
     header: ({ column }) => {
