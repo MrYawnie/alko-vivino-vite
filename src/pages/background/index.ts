@@ -23,6 +23,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
     const origin: string = request.parsedData.origin;
     const category: string = request.parsedData.category;
     const price: number = request.parsedData.price;
+    const size: number = request.parsedData.size;
 
     console.log('wineName:', wineName);
 
@@ -52,40 +53,49 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
         if (data.hits && data.hits.length > 0) {
 
           const statistics: any = {
-            all: {
-              alkoId: alkoId || null,
-              ratings_average: data.hits[0].statistics?.ratings_average || null,
-              ratings_count: data.hits[0].statistics?.ratings_count || null,
-              price: price,
-            },
-          };
-        
-          if (vintage) {
-            statistics[vintage] = {
+            [vintage]: {
               id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
-              alkoId: alkoId || null,
               ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
               ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
-              price: price,
+              size: {
+                [size]: {
+                  price: price,
+                  alkoId: alkoId || null,
+                },
+              },
+            },            
+          };
+
+          /* if (vintage) {
+            statistics[vintage] = {
+              id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
+              ratings_average: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null,
+              ratings_count: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null,
+              size: {
+                [size]: {
+                  price: price,
+                  alkoId: alkoId || null,
+                },
+              },
             };
-          }
+          } */
 
           const filteredData: FilteredData = {
             id: data.hits[0].vintages[0].id || null,
             name: data.hits[0].name || null,
-            alkoId: alkoId || null,
             alkoName: wineName,
             category: category || null,
             alcohol: alcohol || null,
-            price: price || null,
-            image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
+            ratings_average: data.hits[0].statistics?.ratings_average || null,
+            ratings_count: data.hits[0].statistics?.ratings_count || null,
+            // image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
             region: {
-              country: origin || null,
+              countryName: origin || data.hits[0].winery?.region.country || null,
               countryCode: data.hits[0].region?.country || data.hits[0].winery?.region.country || null,
               name: data.hits[0].region?.name || data.hits[0].winery?.region.name || null,
               region: data.hits[0].winery?.region.name || null,
             },
-            statistics: statistics,
+            vintage: statistics,
             timestamp: new Date().getTime(),
           };
 

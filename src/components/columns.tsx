@@ -1,53 +1,60 @@
 "use client"
 
-import { ColumnDef } from "@tanstack/react-table"
-import { ArrowUpDown } from "lucide-react";
+import { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, Star } from "lucide-react";
 import { Button } from "./ui/button";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@radix-ui/react-tooltip";
-import { TooltipProvider } from "./ui/tooltip";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { useState } from "react";
 
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
+// Define the wine type
 export type Wine = {
   id: number;
   name: string;
-  alkoId: number;
   alkoName: string;
   category: string;
   alcohol: number;
-  price: string;
-  image: string;
+  ratings_average: number | null;
+  ratings_count: number;
   region: {
-    country: string;
+    countryCode: string;
     name: string;
     region: string;
   };
-  statistics: {
+  vintage: {
     [key: string]: {
       id?: number;
-      alkoId?: number;
       ratings_average: number | null;
       ratings_count: number;
-      price: number;
+      size?: {
+        [size: number]: {
+          price: number;
+          alkoId: number;
+        };
+      };
     };
   };
   timestamp: number;
-}
+};
 
 export const columns: ColumnDef<Wine>[] = [
   {
     accessorKey: "category",
     header: ({ column }) => {
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Category
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
+        <div>
+          <input
+            type="text"
+            placeholder="Category"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
     },
   },
   {
@@ -55,28 +62,27 @@ export const columns: ColumnDef<Wine>[] = [
     header: ({ column }) => {
       return (
         <div>
+          <input
+            type="text"
+            placeholder="Name"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Name
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
-          <input
-            type="text"
-            placeholder="Filter by name"
-            onChange={(e) => column.setFilterValue(e.target.value)}
-          />
         </div>
       );
     },
     cell: ({ row, getValue }) => {
       const isExpanded = row.getIsExpanded();
-      const subItemsCount = Object.keys(row.original.statistics).length;
+      const subItemsCount = Object.keys(row.original.vintage).length;
       const canExpand = subItemsCount > 1;
 
       const alkoName = row.original.alkoName;
-      const statistics = row.original.statistics;
+      const statistics = row.original.vintage;
       const keys = Object.keys(statistics).filter(key => key !== 'all');
       return (
         <div>
@@ -84,9 +90,10 @@ export const columns: ColumnDef<Wine>[] = [
           {alkoName} (
           {keys.map((key, index) => (
             <span key={key}>
-              <a href={`https://alko.fi/tuotteet/${statistics[key].alkoId}`} target="_blank" rel="noopener noreferrer">
+              {/* <a href={`https://alko.fi/tuotteet/${statistics[key].alkoId}`} target="_blank" rel="noopener noreferrer">
                 {key}
-              </a>
+              </a> */}
+              {key}
               {index < keys.length - 1 && ", "}
             </span>
           ))}
@@ -97,111 +104,255 @@ export const columns: ColumnDef<Wine>[] = [
   },
   {
     accessorKey: "alcohol",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Alcohol Content
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const alcohol = row.original.alcohol;
-      return `${alcohol} %`;
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Alcohol Content
+        <ArrowUpDown className="ml-2 h-4 w-4" />
+      </Button>
+    ),
+    cell: ({ row }) => `${row.original.alcohol} %`,
   },
   {
-    accessorKey: "region.name",
+    accessorKey: "ratings_average", // Ratings based on vintage
     header: ({ column }) => {
+      const [minRating, setMinRating] = useState(0);
+
+      const handleRatingClick = (rating: number) => {
+        setMinRating(rating);
+        column.setFilterValue(rating);
+      };
+
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Region
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-  },
-  {
-    accessorKey: "statistics.all.ratings_average",
-    header: ({ column }) => {
-      return (
-        <>
+        <div className="flex flex-col space-y-2">
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Average Rating and Count
+            Ratings Average
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Vintage</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Price</TableHead>
-              </TableRow>
-            </TableHeader>
-          </Table>
-        </>
+          <div className="flex space-x-1 mt-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => handleRatingClick(star)}
+                /* className="text-yellow-500" */
+              >
+                {star <= minRating ? <Star fill="dark-gray" size={20} /> : <Star size={20}/>}
+              </button>
+            ))}
+          </div>
+        </div>
       );
     },
     cell: ({ row }) => {
-      const statistics = row.original.statistics;
-      return (
-        <Table>
-          <TableBody>
-            {Object.keys(statistics).map((key) => {
-              if (key === 'all') return null; // Skip 'all' key
-              const { ratings_average, ratings_count, price } = statistics[key];
-              const average = ratings_average ? ratings_average.toFixed(1) : "N/A";
-              const count = ratings_count || "N/A";
-              const priceValue = price || "N/A";
-              return (
-                <TableRow key={key}>
-                  <TableCell>{key}</TableCell>
-                  <TableCell>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <span>{average} ★</span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <span>{count} ratings</span>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell>{priceValue}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      );
+      const ratings = row.original.ratings_average;
+      return ratings !== null ? `${ratings} ★` : "No ratings";
+    },
+    filterFn: (row, columnId, filterValue) => {
+      const rating = row.original.ratings_average;
+      return rating !== null && rating >= filterValue;
     },
   },
   {
-    accessorKey: "price",
+    id: "priceRange",
+    accessorKey: "vintage[0].size[0].price",
     header: ({ column }) => {
+      const [minPrice, setMinPrice] = useState("");
+      const [maxPrice, setMaxPrice] = useState("");
+
+      const handleFilterChange = () => {
+        column.setFilterValue([minPrice, maxPrice]);
+      };
+
+      const handleMinPriceChange = (value: string) => {
+        setMinPrice(value);
+        column.setFilterValue([value, maxPrice]);
+      };
+
+      const handleMaxPriceChange = (value: string) => {
+        setMaxPrice(value);
+        column.setFilterValue([minPrice, value]);
+      };
+
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Price
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
+        <div className="flex flex-col space-y-2">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Price Range
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+          <div className="flex space-x-2">
+            <input
+              type="number"
+              placeholder="Min"
+              value={minPrice}
+              onChange={(e) => handleMinPriceChange(e.target.value)}
+              className="border px-2 py-1 rounded"
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              value={maxPrice}
+              onChange={(e) => handleMaxPriceChange(e.target.value)}
+              className="border px-2 py-1 rounded"
+            />
+          </div>
+        </div>
+      );
     },
     cell: ({ row }) => {
-      const price = parseFloat(row.original.price);
-      return `${price.toFixed(2)} €`;
+      const prices: number[] = [];
+      Object.values(row.original.vintage).forEach(vintageDetail => {
+        const sizes = vintageDetail.size;
+        if (sizes) {
+          Object.values(sizes).forEach(detail => {
+            if (typeof detail.price === "number") prices.push(detail.price);
+          });
+        }
+      });
+
+      const minPrice = Math.min(...prices) || 0;
+      const maxPrice = Math.max(...prices) || 0;
+
+      return minPrice === maxPrice ? `${minPrice} €` : `${minPrice} - ${maxPrice} €`;
+    },
+    sortingFn: (rowA, rowB) => {
+      const getPriceRange = (row: typeof rowA) => {
+        const prices: number[] = [];
+        Object.values(row.original.vintage).forEach(vintageDetail => {
+          const sizes = vintageDetail.size;
+          if (sizes) {
+            Object.values(sizes).forEach(detail => {
+              if (typeof detail.price === "number") prices.push(detail.price);
+            });
+          }
+        });
+
+        const minPrice = Math.min(...prices) || 0;
+        return minPrice;
+      };
+
+      return getPriceRange(rowA) - getPriceRange(rowB);
+    },
+    /* filterFn: (row, columnId, filterValue) => {
+      const [min, max] = filterValue;
+      const prices: number[] = [];
+      Object.values(row.original.vintage).forEach((vintageDetail) => {
+        const sizes = vintageDetail.size;
+        if (sizes) {
+          Object.values(sizes).forEach((detail) => {
+            if (typeof detail.price === "number") prices.push(detail.price);
+          });
+        }
+      });
+
+      const rowMinPrice = Math.min(...prices) || 0;
+      const rowMaxPrice = Math.max(...prices) || 0;
+      
+      debugger;
+
+      if (min && rowMinPrice < parseFloat(min)) {
+        return false;
+      }
+      if (max && rowMaxPrice > parseFloat(max)) {
+        return false;
+      }
+      return true;
+    }, */
+    filterFn: (row, columnId, filterValue) => {
+      const [min, max] = filterValue;
+      const prices: number[] = [];
+
+      // Gather all price points for each vintage and size
+      Object.values(row.original.vintage).forEach((vintageDetail) => {
+        const sizes = vintageDetail.size;
+        if (sizes) {
+          Object.values(sizes).forEach((detail) => {
+            if (typeof detail.price === "number") prices.push(detail.price);
+          });
+        }
+      });
+
+      // If any price point is within the range, the row should be displayed
+      return prices.some(price => {
+        const isAboveMin = min ? price >= parseFloat(min) : true;
+        const isBelowMax = max ? price <= parseFloat(max) : true;
+        return isAboveMin && isBelowMax;
+      });
+    },
+  },
+  {
+    // Country column remains unchanged for base data
+    accessorKey: "region.countryName",
+    header: ({ column }) => {
+      return (
+        <div>
+          <input
+            type="text"
+            placeholder="Country"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
+  },
+  /* {
+    // Country column remains unchanged for base data
+    accessorKey: "region.countryCode",
+    header: ({ column }) => {
+      return (
+        <div>
+          <input
+            type="text"
+            placeholder="Country"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      if (!row.original.region.countryCode) return "";
+      const regionName = new Intl.DisplayNames(["en"], { type: "region" });
+      const countryCode = row.original.region.countryCode.toUpperCase();
+      return regionName.of(countryCode);
+    },
+  }, */
+  {
+    accessorKey: "region.name",
+    header: ({ column }) => {
+      return (
+        <div>
+          <input
+            type="text"
+            placeholder="Region"
+            onChange={(e) => column.setFilterValue(e.target.value)}
+          />
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      );
     },
   },
 ];
