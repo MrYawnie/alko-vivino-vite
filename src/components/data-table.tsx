@@ -120,7 +120,7 @@ export function DataTable<TValue>({
                         <TableHeader>
                           <TableRow>
                             <TableHead>Year</TableHead>
-                            <TableHead>Avg. Rating</TableHead>
+                            <TableHead>Vintage Rating</TableHead>
                             <TableHead>Size</TableHead>
                             <TableHead>Price</TableHead>
                             {/* <TableHead>Alko ID</TableHead> */}
@@ -137,11 +137,14 @@ export function DataTable<TValue>({
 
                             return (
                               <TableRow key={`${year}-${parsedSize}`}>
-                                <TableCell>{year}</TableCell>
-                                <TableCell>{vintageDetail.ratings_average?.toFixed(1) || "N/A"} ★</TableCell>
-                                <TableCell>{parsedSize}</TableCell>
-                                <TableCell>{price} ({pricePerLiter})</TableCell>
-                                {/* <TableCell>{alkoId}</TableCell> */}
+                              <TableCell>{year}</TableCell>
+                              <TableCell>
+                                {vintageDetail.ratings_average?.toFixed(1) || "N/A"} ★ 
+                                <span className="text-xs text-slate-500"> ({vintageDetail.ratings_count})</span>
+                              </TableCell>
+                              <TableCell>{parsedSize}</TableCell>
+                              <TableCell>{price} ({pricePerLiter})</TableCell>
+                              {/* <TableCell>{alkoId}</TableCell> */}
                               </TableRow>
                             );
                           })}

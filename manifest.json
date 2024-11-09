@@ -1,6 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Vivino Rating for Alko",
+  "version": "1.6.0",
   "description": "Show Vivino ratings for wines on alko.fi. Ratings are stored locally and they expire after a month.",
   "options_ui": {
     "page": "src/pages/options/index.html"
@@ -15,14 +16,10 @@
       "32": "icon-32.png"
     }
   },
-  "chrome_url_overrides": {
-    "newtab": "src/pages/newtab/index.html"
-  },
   "icons": {
     "128": "icon-128.png"
   },
   "permissions": [
-    "activeTab",
     "storage"
   ],
   "content_scripts": [
