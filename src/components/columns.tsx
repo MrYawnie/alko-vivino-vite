@@ -3,7 +3,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Star } from "lucide-react";
 import { Button } from "./ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { useState } from "react";
 
 // Define the wine type
@@ -139,9 +138,9 @@ export const columns: ColumnDef<Wine>[] = [
               <button
                 key={star}
                 onClick={() => handleRatingClick(star)}
-                /* className="text-yellow-500" */
+              /* className="text-yellow-500" */
               >
-                {star <= minRating ? <Star fill="dark-gray" size={20} /> : <Star size={20}/>}
+                {star <= minRating ? <Star fill="gold" size={20} /> : <Star size={20} />}
               </button>
             ))}
           </div>
@@ -150,7 +149,15 @@ export const columns: ColumnDef<Wine>[] = [
     },
     cell: ({ row }) => {
       const ratings = row.original.ratings_average;
-      return ratings !== null ? `${ratings} ★` : "No ratings";
+      const count = row.original.ratings_count;
+      return ratings !== null ? (
+        <span className="flex items-center space-x-1">
+          <span>{ratings} ★</span>
+          <span className="text-xs text-gray-500">({count})</span>
+        </span>
+      ) : (
+        "No ratings"
+      );
     },
     filterFn: (row, columnId, filterValue) => {
       const rating = row.original.ratings_average;
@@ -240,31 +247,6 @@ export const columns: ColumnDef<Wine>[] = [
 
       return getPriceRange(rowA) - getPriceRange(rowB);
     },
-    /* filterFn: (row, columnId, filterValue) => {
-      const [min, max] = filterValue;
-      const prices: number[] = [];
-      Object.values(row.original.vintage).forEach((vintageDetail) => {
-        const sizes = vintageDetail.size;
-        if (sizes) {
-          Object.values(sizes).forEach((detail) => {
-            if (typeof detail.price === "number") prices.push(detail.price);
-          });
-        }
-      });
-
-      const rowMinPrice = Math.min(...prices) || 0;
-      const rowMaxPrice = Math.max(...prices) || 0;
-      
-      debugger;
-
-      if (min && rowMinPrice < parseFloat(min)) {
-        return false;
-      }
-      if (max && rowMaxPrice > parseFloat(max)) {
-        return false;
-      }
-      return true;
-    }, */
     filterFn: (row, columnId, filterValue) => {
       const [min, max] = filterValue;
       const prices: number[] = [];
@@ -308,33 +290,6 @@ export const columns: ColumnDef<Wine>[] = [
       );
     },
   },
-  /* {
-    // Country column remains unchanged for base data
-    accessorKey: "region.countryCode",
-    header: ({ column }) => {
-      return (
-        <div>
-          <input
-            type="text"
-            placeholder="Country"
-            onChange={(e) => column.setFilterValue(e.target.value)}
-          />
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      );
-    },
-    cell: ({ row }) => {
-      if (!row.original.region.countryCode) return "";
-      const regionName = new Intl.DisplayNames(["en"], { type: "region" });
-      const countryCode = row.original.region.countryCode.toUpperCase();
-      return regionName.of(countryCode);
-    },
-  }, */
   {
     accessorKey: "region.name",
     header: ({ column }) => {

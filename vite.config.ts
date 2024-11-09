@@ -3,6 +3,8 @@ import { resolve } from 'path';
 import fs from 'fs';
 import { defineConfig } from 'vite';
 import { crx, ManifestV3Export } from '@crxjs/vite-plugin';
+import tailwindcss from 'tailwindcss';
+import autoprefixer from 'autoprefixer';
 
 import manifest from './manifest.json';
 import devManifest from './manifest.dev.json';
@@ -79,10 +81,23 @@ export default defineConfig({
     }),
     stripDevIcons(isDev)
   ],
+  /* css: {
+    postcss: {
+      plugins: [
+        tailwindcss(),
+        autoprefixer,
+      ],
+    },
+  }, */
   publicDir,
   build: {
     outDir,
     sourcemap: isDev,
-    emptyOutDir: !isDev
+    emptyOutDir: !isDev,
+    rollupOptions: {
+      input: {
+        datatab: resolve(pagesDir, 'datatab/index.html'),
+      },
+    },
   },
 });
