@@ -62,7 +62,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
             const winery: string = data.hits[0].winery.name;
             const distance = compareNames(producer, winery);
             console.log('Alko:', producer, 'Vivino:', winery, 'Distance:', distance);
-            if (distance < 5) {
+            if (distance < 5 || producer === 'Hartwall Oy' || producer === 'Winepartners Nordic' || producer === 'IWB' || winery === 'Bixio') {
               ratings_average = data.hits[0].statistics?.ratings_average;
               ratings_count = data.hits[0].statistics?.ratings_count;
               vintage_ratings_average = data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null;

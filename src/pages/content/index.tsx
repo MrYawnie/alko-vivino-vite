@@ -148,6 +148,7 @@ import { AlkoData, FilteredData } from '@src/lib/types';
     const overallRatingElement: HTMLSpanElement = document.createElement('span');
     const vintageRatingElement: HTMLSpanElement = document.createElement('span');
     const vivinoLink: HTMLAnchorElement = document.createElement('a');
+    vivinoLink.style.display = 'block';
     const vintageLink: HTMLAnchorElement = document.createElement('a');
     const ratingElement: HTMLDivElement = document.createElement('div');
 
