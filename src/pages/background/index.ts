@@ -12,6 +12,46 @@ interface WineResponse {
   error?: string;
 }
 
+// TypeScript interfaces for Vivino API response
+interface VivinoVintage {
+  id: number;
+  year: string;
+  statistics?: {
+    ratings_average: number;
+    ratings_count: number;
+  };
+}
+
+interface VivinoWinery {
+  name: string;
+  region: {
+    country: string;
+    name: string;
+  };
+}
+
+interface VivinoWine {
+  name: string;
+  vintages: VivinoVintage[];
+  statistics?: {
+    ratings_average: number;
+    ratings_count: number;
+  };
+  winery?: VivinoWinery;
+  region?: {
+    country: string;
+    name: string;
+  };
+}
+
+interface VivinoApiResponse {
+  hits: VivinoWine[];
+}
+
+// Producer/winery exceptions for matching
+const PRODUCER_EXCEPTIONS = ['Hartwall Oy', 'Winepartners Nordic', 'IWB'];
+const WINERY_EXCEPTIONS = ['Bixio'];
+
 console.log('Background script running...');
 
 chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runtime.MessageSender, sendResponse: (response: WineResponse) => void) => {
@@ -37,7 +77,7 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
         'x-algolia-api-key': '60c11b2f1068885161d95ca068d3a6ae',
         'x-algolia-application-id': '9TAKGWJUXL',
       },
-      body: JSON.stringify({ query: wineName, hitsPerPage: 6 })
+      body: JSON.stringify({ query: wineName, hitsPerPage: 1 })
     };
 
     fetch(
@@ -50,54 +90,71 @@ chrome.runtime.onMessage.addListener((request: WineRequest, sender: chrome.runti
         }
         return response.json();
       })
-      .then((data: any) => {
+      .then((data: VivinoApiResponse) => {
         // console.log('data:', data.hits);
         if (data.hits && data.hits.length > 0) {
-          let ratings_average = null;
-          let ratings_count = null;
-          let vintage_ratings_average = null;
-          let vintage_ratings_count = null;
+          const wine = data.hits[0];
+          let ratings_average: number | null = null;
+          let ratings_count: number | null = null;
+          let vintage_ratings_average: number | null = null;
+          let vintage_ratings_count: number | null = null;
+          let vintageId: number | null = null;
 
-          if (data.hits[0].winery) {
-            const winery: string = data.hits[0].winery.name;
+          // Validate producer match if available, otherwise trust the wine name search
+          let isProducerMatch = !producer || producer.trim() === ''; // If no producer, accept match
+
+          if (producer && producer.trim() !== '' && wine.winery) {
+            const winery: string = wine.winery.name;
             const distance = compareNames(producer, winery);
             console.log('Alko:', producer, 'Vivino:', winery, 'Distance:', distance);
-            if (distance < 5 || producer === 'Hartwall Oy' || producer === 'Winepartners Nordic' || producer === 'IWB' || winery === 'Bixio') {
-              ratings_average = data.hits[0].statistics?.ratings_average;
-              ratings_count = data.hits[0].statistics?.ratings_count;
-              vintage_ratings_average = data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_average || null;
-              vintage_ratings_count = data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.statistics?.ratings_count || null;
+
+            // Check if producer/winery matches using distance threshold or exceptions
+            isProducerMatch = distance < 5 ||
+                             PRODUCER_EXCEPTIONS.includes(producer) ||
+                             WINERY_EXCEPTIONS.includes(winery);
+          }
+
+          if (isProducerMatch) {
+            ratings_average = wine.statistics?.ratings_average || null;
+            ratings_count = wine.statistics?.ratings_count || null;
+
+            // Find vintage data once instead of filtering multiple times
+            const vintageData = wine.vintages?.find((v) => v.year === vintage);
+            if (vintageData) {
+              vintage_ratings_average = vintageData.statistics?.ratings_average || null;
+              vintage_ratings_count = vintageData.statistics?.ratings_count || null;
+              vintageId = vintageData.id;
             }
           }
 
-          const statistics: any = {
+          const statistics: FilteredData['vintage'] = {
             [vintage]: {
-              id: data.hits[0].vintages?.filter((v: any) => v.year === vintage)[0]?.id || null,
-              ratings_average: vintage_ratings_average || null,
-              ratings_count: vintage_ratings_count || null,
+              id: vintageId,
+              ratings_average: vintage_ratings_average,
+              ratings_count: vintage_ratings_count || 0,
               size: {
                 [size]: {
                   price: price,
-                  alkoId: alkoId || null,
+                  alkoId: alkoId,
                 },
               },
-            },            
+            },
           };
 
           const filteredData: FilteredData = {
-            id: data.hits[0].vintages[0].id || null,
-            name: data.hits[0].name || null,
+            id: wine.vintages[0]?.id || null,
+            name: wine.name || null,
             alkoName: wineName,
             category: category || null,
             alcohol: alcohol || null,
-            ratings_average: ratings_average || null,
-            ratings_count: ratings_count || null,
-            // image: data.hits[0].image.location ? data.hits[0].image.location.replace(/^\/\//, 'https://') : null,
+            ratings_average: ratings_average,
+            ratings_count: ratings_count || 0,
+            // image: wine.image.location ? wine.image.location.replace(/^\/\//, 'https://') : null,
             region: {
-              countryName: origin || data.hits[0].winery?.region.country || null,
-              countryCode: data.hits[0].region?.country || data.hits[0].winery?.region.country || null,
-              name: data.hits[0].region?.name || data.hits[0].winery?.region.name || null,
-              region: data.hits[0].winery?.region.name || null,
+              countryName: origin || wine.winery?.region.country || null,
+              countryCode: wine.region?.country || wine.winery?.region.country || null,
+              name: wine.region?.name || wine.winery?.region.name || null,
+              region: wine.winery?.region.name || null,
             },
             vintage: statistics,
             timestamp: new Date().getTime(),

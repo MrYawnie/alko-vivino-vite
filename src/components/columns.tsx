@@ -35,6 +35,22 @@ export type Wine = {
   timestamp: number;
 };
 
+// Helper function to extract all prices from a wine's vintage data
+function extractPrices(wine: Wine): number[] {
+  const prices: number[] = [];
+  Object.values(wine.vintage).forEach(vintageDetail => {
+    const sizes = vintageDetail.size;
+    if (sizes) {
+      Object.values(sizes).forEach(detail => {
+        if (typeof detail.price === "number") {
+          prices.push(detail.price);
+        }
+      });
+    }
+  });
+  return prices;
+}
+
 export const columns: ColumnDef<Wine>[] = [
   {
     accessorKey: "category",
@@ -214,16 +230,7 @@ export const columns: ColumnDef<Wine>[] = [
       );
     },
     cell: ({ row }) => {
-      const prices: number[] = [];
-      Object.values(row.original.vintage).forEach(vintageDetail => {
-        const sizes = vintageDetail.size;
-        if (sizes) {
-          Object.values(sizes).forEach(detail => {
-            if (typeof detail.price === "number") prices.push(detail.price);
-          });
-        }
-      });
-
+      const prices = extractPrices(row.original);
       const minPrice = Math.min(...prices) || 0;
       const maxPrice = Math.max(...prices) || 0;
 
@@ -231,35 +238,15 @@ export const columns: ColumnDef<Wine>[] = [
     },
     sortingFn: (rowA, rowB) => {
       const getPriceRange = (row: typeof rowA) => {
-        const prices: number[] = [];
-        Object.values(row.original.vintage).forEach(vintageDetail => {
-          const sizes = vintageDetail.size;
-          if (sizes) {
-            Object.values(sizes).forEach(detail => {
-              if (typeof detail.price === "number") prices.push(detail.price);
-            });
-          }
-        });
-
-        const minPrice = Math.min(...prices) || 0;
-        return minPrice;
+        const prices = extractPrices(row.original);
+        return Math.min(...prices) || 0;
       };
 
       return getPriceRange(rowA) - getPriceRange(rowB);
     },
     filterFn: (row, columnId, filterValue) => {
       const [min, max] = filterValue;
-      const prices: number[] = [];
-
-      // Gather all price points for each vintage and size
-      Object.values(row.original.vintage).forEach((vintageDetail) => {
-        const sizes = vintageDetail.size;
-        if (sizes) {
-          Object.values(sizes).forEach((detail) => {
-            if (typeof detail.price === "number") prices.push(detail.price);
-          });
-        }
-      });
+      const prices = extractPrices(row.original);
 
       // If any price point is within the range, the row should be displayed
       return prices.some(price => {
